@@ -1,0 +1,2 @@
+# ideal-camera
+a camera
