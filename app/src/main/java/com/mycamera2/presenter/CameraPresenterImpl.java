@@ -13,8 +13,8 @@ public  abstract class CameraPresenterImpl implements ICameraPresenter {
     protected ICameraView mCameraView;
 
     @Override
-    public void handleClickEvent() {
-
+    public void onShutterButtonClick() {
+        mCameraModel.onShutter();
     }
 
     @Override

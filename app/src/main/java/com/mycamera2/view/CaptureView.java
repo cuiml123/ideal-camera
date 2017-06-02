@@ -6,8 +6,13 @@ import com.mycamera2.presenter.CapturePresenter;
 public class CaptureView extends CameraViewImp {
 
     private static final String TAG = "CaptureView";
+
     public CaptureView() {
         mCameraPresenter = new CapturePresenter();
     }
 
+    @Override
+    public void onShutterClick() {
+        super.onShutterClick();
+    }
 }

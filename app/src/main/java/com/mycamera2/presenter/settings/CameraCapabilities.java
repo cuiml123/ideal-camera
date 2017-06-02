@@ -5,6 +5,7 @@ import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
 import android.util.Log;
@@ -75,17 +76,47 @@ import static android.hardware.camera2.CameraMetadata.CONTROL_SCENE_MODE_THEATRE
 import static android.hardware.camera2.CameraMetadata.STATISTICS_SCENE_FLICKER_50HZ;
 import static android.hardware.camera2.CameraMetadata.STATISTICS_SCENE_FLICKER_60HZ;
 import static android.hardware.camera2.CameraMetadata.STATISTICS_SCENE_FLICKER_NONE;
-import static com.mycamera2.presenter.settings.CameraCapabilities.Antibanding.*;
+import static com.mycamera2.presenter.settings.CameraCapabilities.Antibanding.ANTIBANDING_50HZ;
+import static com.mycamera2.presenter.settings.CameraCapabilities.Antibanding.ANTIBANDING_60HZ;
 import static com.mycamera2.presenter.settings.CameraCapabilities.Antibanding.OFF;
-import static com.mycamera2.presenter.settings.CameraCapabilities.ColorEffect.*;
-import static com.mycamera2.presenter.settings.CameraCapabilities.FocusMode.*;
-import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.*;
-import static com.mycamera2.presenter.settings.CameraCapabilities.WhiteBalance.*;
+import static com.mycamera2.presenter.settings.CameraCapabilities.ColorEffect.ANTIQUE;
+import static com.mycamera2.presenter.settings.CameraCapabilities.ColorEffect.COLD;
+import static com.mycamera2.presenter.settings.CameraCapabilities.ColorEffect.MONO;
+import static com.mycamera2.presenter.settings.CameraCapabilities.ColorEffect.NEGATIVE;
+import static com.mycamera2.presenter.settings.CameraCapabilities.ColorEffect.NONE;
+import static com.mycamera2.presenter.settings.CameraCapabilities.ColorEffect.SEPIA;
+import static com.mycamera2.presenter.settings.CameraCapabilities.FocusMode.CONTINUOUS_PICTURE;
+import static com.mycamera2.presenter.settings.CameraCapabilities.FocusMode.CONTINUOUS_VIDEO;
+import static com.mycamera2.presenter.settings.CameraCapabilities.FocusMode.EXTENDED_DOF;
+import static com.mycamera2.presenter.settings.CameraCapabilities.FocusMode.FIXED;
+import static com.mycamera2.presenter.settings.CameraCapabilities.FocusMode.MACRO;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.ACTION;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.BARCODE;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.BEACH;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.CANDLELIGHT;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.FIREWORKS;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.HDR;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.LANDSCAPE;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.NIGHT;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.PARTY;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.PORTRAIT;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.SNOW;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.SPORTS;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.STEADYPHOTO;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.SUNSET;
+import static com.mycamera2.presenter.settings.CameraCapabilities.SceneMode.THEATRE;
+import static com.mycamera2.presenter.settings.CameraCapabilities.WhiteBalance.CLOUDY_DAYLIGHT;
+import static com.mycamera2.presenter.settings.CameraCapabilities.WhiteBalance.DAYLIGHT;
+import static com.mycamera2.presenter.settings.CameraCapabilities.WhiteBalance.FLUORESCENT;
+import static com.mycamera2.presenter.settings.CameraCapabilities.WhiteBalance.INCANDESCENT;
+import static com.mycamera2.presenter.settings.CameraCapabilities.WhiteBalance.SHADE;
+import static com.mycamera2.presenter.settings.CameraCapabilities.WhiteBalance.TWILIGHT;
+import static com.mycamera2.presenter.settings.CameraCapabilities.WhiteBalance.WARM_FLUORESCENT;
 
 public class CameraCapabilities {
 
     private static final String TAG = "CameraCapabilities";
-    CameraCharacteristics mCharacteristics;
+    private CameraCharacteristics mCharacteristics;
     protected ArrayList<int[]> mSupportedPreviewFpsRange = new ArrayList<int[]>();
     protected ArrayList<Size> mSupportedPreviewSizes = new ArrayList<Size>();
     protected TreeSet<Integer> mSupportedPreviewFormats = new TreeSet<Integer>();
@@ -114,13 +145,26 @@ public class CameraCapabilities {
     protected float mVerticalViewAngle;
     private final Stringifier mStringifier = new Stringifier();
 
+    private boolean mRawCaptureSupported = false;
+    private boolean mAeLockSupported = false;
+    private boolean mAwbLockSupported = false;
+    private boolean mAfLockSupported = false;
+    private boolean mHighResolutionBurstCaptureSupported = false;
+    private boolean mZslCaptureSupported = false;
+    private boolean mToneMapSupported = false;
+    private boolean mHighSpeedVideoRecodingSupported = false;
+
+    private SettingsManager mSettingsManager;
+
 
     public CameraCapabilities(CameraCharacteristics characteristics) {
         mCharacteristics = characteristics;
+        if (mCharacteristics == null) return;
         init();
     }
 
     private void init() {
+        initCapabilities();
         StreamConfigurationMap configurationMap = mCharacteristics.get(SCALER_STREAM_CONFIGURATION_MAP);
         mSupportedPreviewSizes.addAll(Arrays.asList(configurationMap.getOutputSizes(SurfaceTexture.class)));
         for (int format : configurationMap.getOutputFormats()) {
@@ -181,15 +225,87 @@ public class CameraCapabilities {
         // TODO: Detect other features
     }
 
-    public void initCameraSettings(SettingsManager settingsManager, String cameraId) {
-        // 初始化拍照尺寸和预览尺寸
-        initSizeSettings(settingsManager, cameraId);
+    private void initCapabilities() {
+        int hardWareLevel = mCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
+        if (hardWareLevel == CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL) {
+            // TODO: use hardWareLevel parameter
+        }
+        int[] capabilities = mCharacteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+        for (int capability : capabilities) {
+            switch (capability) {
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE:
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR:
+                    mAeLockSupported = true;
+                    mAwbLockSupported = true;
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING:
+                    mToneMapSupported = true;
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW:
+                    mRawCaptureSupported = true;
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING:
+                    mZslCaptureSupported = true;
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS:
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_BURST_CAPTURE:
+                    mHighResolutionBurstCaptureSupported = true;
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_YUV_REPROCESSING:
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DEPTH_OUTPUT:
+                    break;
+                case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO:
+                    mHighSpeedVideoRecodingSupported = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 
+    public void initCameraSettings(SettingsManager settingsManager, String cameraId) {
+        mSettingsManager = settingsManager;
+        // 初始化拍照尺寸和预览尺寸
+        initPhotoSizeSettings(cameraId);
+
+        // 初始化录像尺寸
+        initVideoSizeSettings(cameraId);
         // 初始化flash mode
         mSupportedFlashModes.toArray()[0].toString();
     }
 
-    private void initSizeSettings(SettingsManager settingsManager, String cameraId) {
+    private void initVideoSizeSettings(String cameraId) {
+        Size wideScreenVideoSize = new Size(0,0);
+        Size ordinaryScreenVideoSize = new Size(0,0);
+        for (int i = 0; i < mSupportedVideoSizes.toArray().length; i++) {
+            Size size = mSupportedVideoSizes.get(i);
+            int height = size.getHeight();
+            int width = size.getWidth();
+            float ratio = (float) width / (float) height;
+            if (ratio > 1.77 && ratio < 1.78
+                    && width * height > wideScreenVideoSize.getHeight() * wideScreenVideoSize.getWidth()) {
+                wideScreenVideoSize = size;
+            } else if (ratio > 1.33 && ratio < 1.34
+                    && width * height > ordinaryScreenVideoSize.getHeight() * ordinaryScreenVideoSize.getWidth()) {
+                ordinaryScreenVideoSize = size;
+            }
+        }
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_VIDEO_WIDTH,
+                wideScreenVideoSize.getWidth());
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_VIDEO_HEIGHT,
+                wideScreenVideoSize.getHeight());
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_VIDEO_WIDTH,
+                ordinaryScreenVideoSize.getWidth());
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_VIDEO_HEIGHT,
+                ordinaryScreenVideoSize.getHeight());
+        Log.i(TAG, "initSizeSettings wideScreenVideoSize = "+ wideScreenVideoSize
+                +", ordinaryScreenVideoSize = " + ordinaryScreenVideoSize + ", cameraId = " + cameraId);
+    }
+
+    private void initPhotoSizeSettings(String cameraId) {
         Size wideScreenPicSize = new Size(0,0);
         Size ordinaryScreenPicSize = new Size(0,0);
         Size wideScreenPrevSize = new Size(0,0);
@@ -198,7 +314,7 @@ public class CameraCapabilities {
             Size size = mSupportedPhotoSizes.get(i);
             int height = size.getHeight();
             int width = size.getWidth();
-            float ratio = width / height;
+            float ratio = (float) width / (float) height;
             if (ratio > 1.77 && ratio < 1.78
                     && width * height > wideScreenPicSize.getHeight() * wideScreenPicSize.getWidth()) {
                 wideScreenPicSize = size;
@@ -207,42 +323,42 @@ public class CameraCapabilities {
                 ordinaryScreenPicSize = size;
             }
         }
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_PIC_WIDTH,
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_PIC_WIDTH,
                 wideScreenPicSize.getWidth());
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_PIC_HEIGHT,
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_PIC_HEIGHT,
                 wideScreenPicSize.getHeight());
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_PIC_WIDTH,
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_PIC_WIDTH,
                 ordinaryScreenPicSize.getWidth());
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_PIC_HEIGHT,
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_PIC_HEIGHT,
                 ordinaryScreenPicSize.getHeight());
         Log.i(TAG, "initSizeSettings wideScreenPicSize = "+ wideScreenPicSize
-                +", ordinaryScreenPicSize = " + ordinaryScreenPicSize);
+                +", ordinaryScreenPicSize = " + ordinaryScreenPicSize + ", cameraId = " + cameraId);
 
         for (int i = 0; i < mSupportedPreviewSizes.toArray().length; i++) {
             Size size = mSupportedPreviewSizes.get(i);
             int height = size.getHeight();
             int width = size.getWidth();
-            float ratio = width / height;
+            float ratio = (float) width / (float) height;
             if (ratio > 1.77 && ratio < 1.78
                     && width * height > wideScreenPrevSize.getHeight() * wideScreenPrevSize.getWidth()) {
                 wideScreenPrevSize = size;
-            } else if (ratio > 1.33 && ratio < 1.34
+            } else if (ratio > 1.33 && ratio < 1.34 && width * height <= 1600 * 1400
                     && width * height > ordinaryScreenPrevSize.getHeight() * ordinaryScreenPrevSize.getWidth()) {
                 ordinaryScreenPrevSize = size;
             }
         }
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_PREV_WIDTH,
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_PREV_WIDTH,
                 wideScreenPrevSize.getWidth());
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_PREV_HEIGHT,
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_WIDE_PREV_HEIGHT,
                 wideScreenPrevSize.getHeight());
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_PREV_WIDTH,
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_PREV_WIDTH,
                 ordinaryScreenPrevSize.getWidth());
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_PREV_HEIGHT,
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_ORDINARY_PREV_HEIGHT,
                 ordinaryScreenPrevSize.getHeight());
         Log.i(TAG, "initSizeSettings wideScreenPrevSize = "+ wideScreenPrevSize
-                +", ordinaryScreenPrevSize = " + ordinaryScreenPrevSize);
+                +", ordinaryScreenPrevSize = " + ordinaryScreenPrevSize + ", cameraId = " + cameraId);
 
-        settingsManager.set(SettingsManager.SCOPE_GLOBAL + cameraId, Keys.KEY_CURRENT_PIC_RATIO_WIDE, true);
+        mSettingsManager.set(SettingsManager.SCOPE_GLOBAL, Keys.KEY_CURRENT_PIC_RATIO_WIDE, false);
     }
 
 

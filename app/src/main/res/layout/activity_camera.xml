@@ -1,4 +1,4 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -19,7 +19,7 @@
         android:keepScreenOn="true"/>
 
     <LinearLayout
-        android:id="@+id/topPanel"
+        android:id="@+id/top_panel"
         android:layout_width="match_parent"
         android:layout_height="@dimen/tool_bar_height"
         android:background="@null"
@@ -67,12 +67,57 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:background="@null"
-            android:src="@mipmap/ic_switch_photo_facing_holo_light"
+            android:src="@mipmap/icon_switch_camera"
             android:layout_weight="1"/>
 
     </LinearLayout>
 
+    <!--<android.support.v4.widget.DrawerLayout
+        android:id="@+id/drawer_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@null">
+        &lt;!&ndash; As the main content view, the view below consumes the entire
+             space available using match_parent in both dimensions. &ndash;&gt;
+        <FrameLayout
+            android:id="@+id/content_frame"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clickable="false"
+            android:background="@null"/>
+        &lt;!&ndash; android:layout_gravity="start" tells DrawerLayout to treat
+             this as a sliding drawer on the left side for left-to-right
+             languages and on the right side for right-to-left languages.
+             The drawer is given a fixed width in dp and extends the full height of
+             the container. A solid background is used for contrast
+             with the content view. &ndash;&gt;
+        <ListView
+            android:id="@+id/left_drawer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:choiceMode="singleChoice"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="0dp"
+            android:background="#a0aa"/>
+    </android.support.v4.widget.DrawerLayout>-->
 
+    <FrameLayout
+        android:id="@+id/settings_panel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/top_panel"
+        android:visibility="gone"
+        android:background="@null">
+
+    </FrameLayout>
+
+    <com.mycamera2.view.PreviewOverLay
+        android:id="@+id/preview_over_lay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/top_panel"
+        android:background="@null"/>
 
     <LinearLayout
         android:id="@+id/bottom_bar"
@@ -81,16 +126,21 @@
         android:orientation="horizontal"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:layout_gravity="bottom"
+        android:layout_alignParentBottom="true"
         android:gravity="center"
+        android:clickable="false"
         android:weightSum="5">
 
-        <ImageButton
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/thumb"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:background="@null"
             android:layout_gravity="center"
-            android:layout_weight="1"/>
+            android:layout_weight="1"
+            android:padding="6dp"
+            app:civ_border_width="1dp"
+            app:civ_border_color="#fff"/>
 
         <View
             android:layout_width="0dp"
@@ -98,14 +148,17 @@
             android:background="@null"
             android:layout_weight="1" />
 
-        <ImageButton
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/shutter_button"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_gravity="center"
-            android:src="@mipmap/ic_capture_enable"
+            android:src="@mipmap/icon_capture"
             android:background="@null"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:padding="6dp"
+            app:civ_border_width="1dp"
+            app:civ_border_color="#fff" />
 
         <View
             android:layout_width="0dp"
@@ -113,43 +166,17 @@
             android:background="@null"
             android:layout_weight="1" />
 
-        <ImageButton
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/switch_mode"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_gravity="center"
             android:background="@null"
-            android:src="@mipmap/ic_switch_to_video"
-            android:layout_weight="1"/>
+            android:src="@mipmap/icon_video_recoding"
+            android:layout_weight="1"
+            android:padding="12dp"
+            app:civ_border_width="1dp"
+            app:civ_border_color="#fff"/>
     </LinearLayout>
 
-    <android.support.v4.widget.DrawerLayout
-        android:id="@+id/drawer_layout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@null">
-        <!-- As the main content view, the view below consumes the entire
-             space available using match_parent in both dimensions. -->
-        <FrameLayout
-            android:id="@+id/content_frame"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@null"/>
-        <!-- android:layout_gravity="start" tells DrawerLayout to treat
-             this as a sliding drawer on the left side for left-to-right
-             languages and on the right side for right-to-left languages.
-             The drawer is given a fixed width in dp and extends the full height of
-             the container. A solid background is used for contrast
-             with the content view. -->
-        <ListView
-            android:id="@+id/left_drawer"
-            android:layout_width="240dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="start"
-            android:choiceMode="singleChoice"
-            android:divider="@android:color/transparent"
-            android:dividerHeight="0dp"
-            android:background="@null"/>
-    </android.support.v4.widget.DrawerLayout>
-
-</FrameLayout>
+</RelativeLayout>

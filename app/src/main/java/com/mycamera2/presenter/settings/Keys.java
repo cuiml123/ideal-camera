@@ -10,6 +10,10 @@ public class Keys {
     public static String KEY_WIDE_PIC_HEIGHT = "key_wide_pic_height";
     public static String KEY_ORDINARY_PIC_WIDTH = "key_ordinary_pic_width";
     public static String KEY_ORDINARY_PIC_HEIGHT = "key_ordinary_pic_height";
+    public static String KEY_WIDE_VIDEO_WIDTH = "key_wide_pic_width";
+    public static String KEY_WIDE_VIDEO_HEIGHT = "key_wide_pic_height";
+    public static String KEY_ORDINARY_VIDEO_WIDTH = "key_ordinary_pic_width";
+    public static String KEY_ORDINARY_VIDEO_HEIGHT = "key_ordinary_pic_height";
 
     public static String KEY_WIDE_PREV_WIDTH = "key_wide_prev_width";
     public static String KEY_WIDE_PREV_HEIGHT = "key_wide_prev_height";
@@ -24,4 +28,6 @@ public class Keys {
     public static String KEY_CURRENT_SCENE_MODE = "key_current_scene_mode";
     public static String KEY_SUPPORTED_WHITE_BALANCE_MODE = "key_supported_white_balance_mode";
     public static String KEY_CURRENT_WHITE_BALANCE_MODE = "key_current_white_balance_mode";
+
+    public static String KEY_IS_CURRENT_CAPTURE_MODULE = "key_is_current_capture_module";
 }

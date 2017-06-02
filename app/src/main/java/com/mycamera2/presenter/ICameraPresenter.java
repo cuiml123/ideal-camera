@@ -7,7 +7,7 @@ import com.mycamera2.CameraActivity;
 
 public interface ICameraPresenter {
 
-    void handleClickEvent();
+    void onShutterButtonClick();
 
     void openCamera(String id, CameraActivity activity);
 

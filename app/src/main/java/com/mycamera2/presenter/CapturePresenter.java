@@ -1,11 +1,11 @@
 package com.mycamera2.presenter;
 
-import com.mycamera2.model.CaptureModel;
+import com.mycamera2.model.CameraModelImpl;
 
 public class CapturePresenter extends CameraPresenterImpl {
 
     public CapturePresenter() {
-        mCameraModel = new CaptureModel();
+        mCameraModel = CameraModelImpl.getInstance();
     }
 
 }

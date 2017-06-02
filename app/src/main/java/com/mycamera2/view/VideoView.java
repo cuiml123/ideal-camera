@@ -10,4 +10,9 @@ public class VideoView extends CameraViewImp {
     public VideoView() {
         mCameraPresenter = new VideoPresenter();
     }
+
+    @Override
+    public void onShutterClick() {
+        super.onShutterClick();
+    }
 }

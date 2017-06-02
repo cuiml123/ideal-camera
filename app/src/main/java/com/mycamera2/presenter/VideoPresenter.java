@@ -1,10 +1,10 @@
 package com.mycamera2.presenter;
 
-import com.mycamera2.model.VideoModel;
+import com.mycamera2.model.CameraModelImpl;
 
 public class VideoPresenter extends CameraPresenterImpl {
 
     public VideoPresenter() {
-        mCameraModel = new VideoModel();
+        mCameraModel = CameraModelImpl.getInstance();
     }
 }
