@@ -61,12 +61,12 @@ public class CameraModelImpl implements ICameraModel {
     public static final String FORMAT_JPEG = ".jpg";
     public static final String FORMAT_MP4 = ".mp4";
 
-    protected CameraDevice mCamera;
-    protected CameraCaptureSession mSession;
+    protected CameraDevice mCamera; //相机实例
+    protected CameraCaptureSession mSession; //会话，向底层发送命令通过这个接口
     protected String mCameraId;
     protected CameraCharacteristics mCameraCharacteristics;
     protected CameraActivity mActivity;
-    protected CameraManager mCameraManager;
+    protected CameraManager mCameraManager; //android系统的camera2 api相机入口
     protected CameraSettings mCameraSettings;
     protected CameraCapabilities mCameraCapabilities;
     protected Rect mActiveArray;
@@ -77,9 +77,9 @@ public class CameraModelImpl implements ICameraModel {
     protected Size mPreviewSize;
     private Size mPhotoSize;
 
-    private Surface mPreviewSurface;
-    private SurfaceTexture mSurface;
-    protected ImageReader mCaptureReader;
+    private Surface mPreviewSurface; //传递给底层的是Surface，上层的控件是SurfaceTexture，这个要区分开
+    private SurfaceTexture mSurface; //通过布局中的TextureView获取，用来构建preview使用的surface
+    protected ImageReader mCaptureReader; //获取照片使用的ImageReader
 
     protected static final int MSG_OPEN_CAMERA = 1;
     protected static final int MSG_CLOSE_CAMERA = 2;
@@ -131,6 +131,7 @@ public class CameraModelImpl implements ICameraModel {
                         mLegacyDevice = mCameraCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL) ==
                                         CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY;
                         Log.i(TAG, "onOpened mLegacyDevice = " + mLegacyDevice);
+                        Log.i(TAG, "onOpened HardWard level = " + mCameraCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL));
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
@@ -383,7 +384,7 @@ public class CameraModelImpl implements ICameraModel {
                 @Override
                 public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
                                             CaptureFailure failure) {
-                    Log.e(TAG, "Capture attempt failed with reason " + failure.getReason());
+                    Log.e(TAG, new StringBuilder().append("Capture attempt failed with reason ").append(failure.getReason()).toString());
                 }};
 
     private void startPreviewSession() {
@@ -456,9 +457,11 @@ public class CameraModelImpl implements ICameraModel {
             /*builder.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             builder.set(CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-            builder.set(CaptureRequest.JPEG_ORIENTATION, 90);*/
+                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);*/
+            builder.set(CaptureRequest.JPEG_ORIENTATION, 90);
+            //停止预览会话
             mSession.stopRepeating();
+            //启动拍照会话
             mSession.capture(builder.build(), captureCallback, null);
         } catch (CameraAccessException ex) {
             Log.e(TAG, "Unable to run autoexposure and perform capture", ex);
@@ -475,12 +478,14 @@ public class CameraModelImpl implements ICameraModel {
             String name = "IMG_" + format.format(new Date());
             String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath();
             Log.i(TAG, "onPictureTaken path = " + path + ", name = " + name);
+            //保存图片文件
             OutputStream outputStream = new FileOutputStream(path + "/" + name + FORMAT_JPEG);
             outputStream.write(pixels);
 
             outputStream.flush();
             outputStream.close();
 
+            //插入更新数据库
             ContentResolver resolver = mActivity.getContentResolver();
 
             File file = new File(path + "/" + name + FORMAT_JPEG);
@@ -519,8 +524,8 @@ public class CameraModelImpl implements ICameraModel {
             Surface previewSurface = new Surface(surfaceTexture);
             Surface recordSurface = mMediaRecorder.getSurface();
             final CaptureRequest.Builder builder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-            builder.addTarget(previewSurface);
-            builder.addTarget(recordSurface);
+            builder.addTarget(previewSurface); //预览的surface
+            builder.addTarget(recordSurface); //录像的surface，MediaRecorder获取图像的图像源
 
             mCamera.createCaptureSession(Arrays.asList(previewSurface, recordSurface, mCaptureReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
@@ -528,8 +533,9 @@ public class CameraModelImpl implements ICameraModel {
                         public void onConfigured(CameraCaptureSession session) {
                             mSession = session;
                             try {
+                                //不断的请求图像，可以用来启动预览和启动录像
                                 mSession.setRepeatingRequest(
-                                        builder.build(), null, null);
+                                        builder.build(), mCameraResultStateCallback, mOptionHandler);
                             } catch (CameraAccessException e) {
                                 e.printStackTrace();
                             }
@@ -539,7 +545,7 @@ public class CameraModelImpl implements ICameraModel {
                         public void onConfigureFailed(CameraCaptureSession session) {
                             Log.d(TAG, "onConfigureFailed: startRecord");
                         }
-                    }, null);
+                    }, mOptionHandler);
 
             mMediaRecorder.start();
             mVideoStartTime = System.currentTimeMillis();
@@ -585,7 +591,7 @@ public class CameraModelImpl implements ICameraModel {
         mVideoFileName = null;
     }
 
-
+    //创建MediaRecorder
     private void setupMediaRecorder() throws IOException {
         Log.i(TAG, "setupMediaRecorder");
         SettingsManager settingsManager = mActivity.getSettingsManager();
@@ -596,10 +602,10 @@ public class CameraModelImpl implements ICameraModel {
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         mVideoFileName = path + "/" + name + FORMAT_MP4;
-        mMediaRecorder.setOutputFile(mVideoFileName);
+        mMediaRecorder.setOutputFile(mVideoFileName); //输出文件
         Log.i(TAG, "setupMediaRecorder mVideoFileName = " + mVideoFileName);
-        mMediaRecorder.setVideoEncodingBitRate(1000000);
-        mMediaRecorder.setVideoFrameRate(30);
+        mMediaRecorder.setVideoEncodingBitRate(1000000); //视频编码比特率
+        mMediaRecorder.setVideoFrameRate(30); //录像帧录
         int width = settingsManager.getInteger(SettingsManager.SCOPE_GLOBAL + mCamera.getId(), Keys.KEY_ORDINARY_VIDEO_WIDTH);
         int height = settingsManager.getInteger(SettingsManager.SCOPE_GLOBAL + mCamera.getId(), Keys.KEY_ORDINARY_VIDEO_HEIGHT);
         if (mActivity.getSettingsManager().getBoolean(SettingsManager.SCOPE_GLOBAL, Keys.KEY_CURRENT_PIC_RATIO_WIDE)) {

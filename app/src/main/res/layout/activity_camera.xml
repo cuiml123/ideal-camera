@@ -11,6 +11,7 @@
     <!-- The primary full-screen view. This can be replaced with whatever view
          is needed to present your content, e.g. VideoView, SurfaceView,
          TextureView, etc. -->
+    <!--预览使用的surface-->
     <TextureView
         android:id="@+id/fullscreen_content"
         android:layout_width="match_parent"
