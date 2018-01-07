@@ -3,7 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://D:\github\ideal-camera\app\app.iml" filepath="D:\github\ideal-camera\app\app.iml" />
       <module fileurl="file://$PROJECT_DIR$/ideal-camera.iml" filepath="$PROJECT_DIR$/ideal-camera.iml" />
+      <module fileurl="file://D:\github\ideal-camera\ideal-camera.iml" filepath="D:\github\ideal-camera\ideal-camera.iml" />
     </modules>
   </component>
 </project>
